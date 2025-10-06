@@ -9,7 +9,7 @@ from openai import OpenAI
 from utils.utils import debug_print
 import difflib
 from datetime import datetime
-
+import re
 import os
 
 from collections import deque
@@ -23,8 +23,7 @@ CORS(app)
 
 short_term_memory = deque(maxlen=20)
 
-
-# Initialize
+# initialisation
 ensure_docker_running()
 start_neo4j_container()
 kg = KnowledgeGraph()
@@ -99,7 +98,7 @@ def delete_fact():
     object_ = data.get('object')
 
     if not all([subject, predicate, object_]):
-        duration = (time.time() - start_time) * 1000  # 毫秒
+        duration = (time.time() - start_time) * 1000  # duration in milliseconds
         print(f"[MONITOR] /api/delete_fact took {duration:.2f}ms (400 Missing fields)")
         return jsonify({"error": "Missing required fields", "refresh": False}), 400
 
@@ -130,7 +129,7 @@ def query_entity():
     if not entity:
         return jsonify({"error": "Entity parameter is required"}), 400
     facts = kg.query_facts_about(entity)
-    print(f"[DEBUG] query_entity response: {json.dumps(facts, ensure_ascii=False)}")  # Debug log
+    print(f"[DEBUG] query_entity response: {json.dumps(facts, ensure_ascii=False)}")  
     return jsonify(facts)
 
 @app.route('/api/query_predicate', methods=['GET'])
@@ -139,7 +138,7 @@ def query_predicate():
     if not predicate:
         return jsonify({"error": "Predicate parameter is required"}), 400
     facts = kg.query_by_predicate(predicate)
-    print(f"[DEBUG] query_predicate response: {json.dumps(facts, ensure_ascii=False)}")  # Debug log
+    print(f"[DEBUG] query_predicate response: {json.dumps(facts, ensure_ascii=False)}")  
     return jsonify(facts)
 
 @app.route('/api/chat', methods=['POST'])
@@ -152,7 +151,7 @@ def chat():
             return jsonify({"error": "Message cannot be empty", "refresh": False}), 400
 
         # -----------------------------
-        # 记录意图提取开始时间
+        # record intent analysis time
         intent_start = time.perf_counter()
         intent_result = llm.analyze_intent_with_gpt(message)
         intent_end = time.perf_counter()
@@ -166,7 +165,7 @@ def chat():
         memory_text = "No related facts found"
 
         # -----------------------------
-        # 处理 add/update/delete/query intent
+        # handle intent operations of add, update, delete, query
         if intent_result.get("add"):
             add_data = intent_result["add"]
             try:
@@ -240,7 +239,7 @@ def chat():
 
         elif intent_result.get("query"):
             query_data = intent_result["query"]
-            # 获取所有事实
+            # acquire related facts
             facts = kg.get_all_facts()
             memory_text = "\n".join([
                 f"{i+1}. {fact['subject']} {fact['predicate']} {fact['object']} (Created At: {fact['created_at']})"
@@ -298,7 +297,7 @@ def chat():
         debug_print(f"Full prompt sent to LLM: {full_prompt}")
 
         # -----------------------------
-        # 记录 GPT 响应生成时间
+        # record GPT response generation time
         gpt_start = time.perf_counter()
         try:
             response = client.chat.completions.create(
@@ -328,7 +327,7 @@ def chat():
         if operation_message:
             response = f"{operation_message}\n{response}"
 
-        # 添加短期记忆
+        # add current message to short-term memory
         try:
             short_term_memory.append({
                 "message": message,

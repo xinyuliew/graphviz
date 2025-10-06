@@ -1,8 +1,9 @@
 import ollama
 import spacy
 import re
-from openai import OpenAI
 from typing import Dict, Optional
+import json
+from config import debug_print
 
 class LocalLLM:
     def __init__(self, model_name="deepseek-r1:7b"):
@@ -28,7 +29,7 @@ class LocalLLM:
 
     def analyze_intent_with_gpt(self, user_input: str, id: Optional[str] = None) -> Dict:
         """
-        Analyze intent using OpenAI GPT and return structured data.
+        analyze intent using OpenAI GPT and return structured data.
         """
         result = {
             "add": None,
@@ -110,7 +111,7 @@ class LocalLLM:
         return "query"  # Default to query
 
     def extract_entities_and_predicate(self, user_input):
-        """Extract entities and predicate using syntactic analysis"""
+        """extract entities and predicate using syntactic analysis"""
         try:
             doc = self.nlp(user_input)
             subject = None
@@ -152,7 +153,7 @@ class LocalLLM:
             return {"subject": None, "objects": [], "predicate": None}
 
     def extract_new_predicate(self, user_input):
-        """Extract new predicate for update intent"""
+        """extract new predicate for update intent"""
         try:
             doc = self.nlp(user_input)
             update_keywords = ["no longer", "now", "change to", "instead"]
@@ -173,7 +174,7 @@ class LocalLLM:
             return None
 
     def analyze_intent_and_extract(self, user_input, id=None):
-        """Analyze intent and extract triples, including query"""
+        """analyze intent and extract triples, including query"""
         result = {"add": None, "update": None, "delete": None, "query": None}
 
         # Classify intent
@@ -183,7 +184,7 @@ class LocalLLM:
         objects = parsed["objects"]
         predicate = parsed["predicate"]
 
-        # Populate result based on intent
+        # populate result based on intent
         if intent == "add" and subject and objects and predicate:
             result["add"] = {
                 "subject": subject,
@@ -198,14 +199,14 @@ class LocalLLM:
                     "old_predicate": predicate,
                     "old_object": objects[0] if objects else None,
                     "new_predicate": new_predicate,
-                    "id": id  # From frontend
+                    "id": id  # from frontend
                 }
         elif intent == "delete" and subject and objects and predicate and id:
             result["delete"] = {
                 "subject": subject,
                 "predicate": predicate,
                 "object": objects[0] if objects else None,
-                "id": id  # From frontend
+                "id": id  # from frontend
             }
         elif intent == "query":
             query_demand = subject if subject else (predicate if predicate else (objects[0] if objects else None))

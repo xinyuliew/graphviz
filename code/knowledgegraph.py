@@ -56,17 +56,17 @@ class KnowledgeGraph:
             with open('operation_log.jsonl', 'a') as f:
                 json.dump(log_entry, f, ensure_ascii=False)
                 f.write('\n')
-            print(f"✅ Logged {operation_type} operation: {details}")
+            print(f"Logged {operation_type} operation: {details}")
         except Exception as e:
             print(f"Failed to log operation: {str(e)}")
 
     
     def add_fact(self, subject, predicate, obj, src, original_message):
-        # Generate unique ID
+        # generate unique ID
         fact_id = str(uuid.uuid4())
         created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Check if triple exists in NetworkX graph
+        # check if triple exists in NetworkX graph
         edge_exists = False
         if subject in self.graph:
             for neighbor, edges in self.graph[subject].items():
@@ -77,7 +77,7 @@ class KnowledgeGraph:
                             print(f"Triple {subject} {predicate} {obj} already exists in memory graph, skipping")
                             return False
 
-        # Check if triple exists in Neo4j
+        # check if triple exists in Neo4j
         if self.driver and not edge_exists:
             try:
                 with self.driver.session() as session:
@@ -92,7 +92,7 @@ class KnowledgeGraph:
             except Exception as e:
                 print(f"Neo4j check failed: {str(e)}")
 
-        # Add to NetworkX graph if triple does not exist
+        # add to NetworkX graph if triple does not exist
         if src == 'Manual':
             original_message = None
             self.graph.add_edge(
@@ -105,7 +105,7 @@ class KnowledgeGraph:
                 version=1
             )
 
-        # Add to Neo4j database
+        # add to Neo4j database
         if self.driver:
             try:
                 with self.driver.session() as session:
@@ -124,7 +124,7 @@ class KnowledgeGraph:
                     version=1
                     )
                 print(f"Triple {subject} {predicate} {obj} (ID: {fact_id}) added to memory and Neo4j, created at: {created_at}, source: {src}, version: 1")
-                # Log the add operation
+                # log the add operation
                 self.log_operation("add", {
                     "subject": subject,
                     "predicate": predicate,
@@ -156,7 +156,7 @@ class KnowledgeGraph:
                             fact_keys.add(triple)
                             original_message = rec['original_message'] if rec['original_message'] is not None else 'N/A'
                             facts.append({
-                                "id": rec['id'],  # Add unique ID
+                                "id": rec['id'],  # add unique ID
                                 "subject": rec['subject'],
                                 "predicate": rec['predicate'],
                                 "object": rec['object'],
@@ -177,7 +177,7 @@ class KnowledgeGraph:
                         fact_keys.add(triple)
                         original_message = attr.get('original_message', 'N/A')
                         facts.append({
-                            "id": attr.get('id'),  # Add unique ID
+                            "id": attr.get('id'),  # add unique ID
                             "subject": entity,
                             "predicate": attr['predicate'],
                             "object": neighbor,
@@ -207,7 +207,7 @@ class KnowledgeGraph:
                             fact_keys.add(triple)
                             original_message = rec['original_message'] if rec['original_message'] is not None else 'N/A'
                             facts.append({
-                                "id": rec['id'],  # Add unique ID
+                                "id": rec['id'],  #add unique ID
                                 "subject": rec['subject'],
                                 "predicate": rec['predicate'],
                                 "object": rec['object'],
@@ -227,7 +227,7 @@ class KnowledgeGraph:
                     fact_keys.add(triple)
                     original_message = attr.get('original_message', 'N/A')
                     facts.append({
-                        "id": attr.get('id'),  # Add unique ID
+                        "id": attr.get('id'),  # add unique ID
                         "subject": subj,
                         "predicate": attr['predicate'],
                         "object": obj,
@@ -370,7 +370,7 @@ class KnowledgeGraph:
                             fact_keys.add(triple)
                             original_message = rec["original_message"] if rec["original_message"] is not None else "N/A"
                             facts.append({
-                                "id": rec["id"],  # Add unique ID
+                                "id": rec["id"],  # add unique ID
                                 "subject": rec["subject"],
                                 "predicate": rec["predicate"],
                                 "object": rec["object"],
@@ -379,7 +379,7 @@ class KnowledgeGraph:
                                 "original_message": original_message,
                                 "version": str(rec["version"] or 1)
                             })
-                    print(f"✅ Neo4j query for all facts successful, found {len(facts)} records")
+                    print(f"Neo4j query for all facts successful, found {len(facts)} records")
             except Exception as e:
                 print(f"Neo4j query failed: {str(e)}")
 
@@ -389,7 +389,7 @@ class KnowledgeGraph:
                 fact_keys.add(triple)
                 original_message = attr.get('original_message', 'N/A')
                 facts.append({
-                    "id": attr.get('id'),  # Add unique ID
+                    "id": attr.get('id'),  # add unique ID
                     "subject": subj,
                     "predicate": attr['predicate'],
                     "object": obj,
@@ -405,13 +405,13 @@ class KnowledgeGraph:
     def update_fact(self, subject, old_predicate, object, new_predicate, new_src, new_original_message):
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
-            # Check if new predicate is same as old
+            # check if new predicate is same as old
             if new_predicate == old_predicate:
                 print(f"New predicate {new_predicate} is same as old predicate {old_predicate}, skipping update")
                 return False
             
             try:
-                # Check if subject and edge exist in NetworkX graph
+                # check if subject and edge exist in NetworkX graph
                 if subject not in self.graph:
                     print(f"Node {subject} does not exist in memory graph")
                     return False
@@ -456,7 +456,7 @@ class KnowledgeGraph:
                 except Exception as e:
                     print(f"Failed to save update history: {str(e)}")
 
-                # Update NetworkX graph, inherit original ID
+                # update NetworkX graph, inherit original ID
                 self.graph.remove_edge(subject, object, edge_key)
                 self.graph.add_edge(
                     subject, object,
@@ -468,7 +468,7 @@ class KnowledgeGraph:
                     version=old_attributes.get('version', 1) + 1
                 )
                 print(f"Updated {subject} {old_predicate} {object} (ID: {old_attributes.get('id')}) to {subject} {new_predicate} {object} (version: {self.graph[subject][object][0]['version']}) in memory graph")
-                # Log the update operation
+                # log the update operation
                 self.log_operation("update", {
                     "subject": subject,
                     "old_predicate": old_predicate,
@@ -480,7 +480,7 @@ class KnowledgeGraph:
                 print(f"Memory graph update failed: {str(e)}")
                 return False
 
-            # Update Neo4j, inherit original ID
+            # update Neo4j database
             if self.driver:
                 try:
                     with self.driver.session() as session:
@@ -506,7 +506,7 @@ class KnowledgeGraph:
                             print(f"Triple {subject} {old_predicate} {object} (ID: {old_attributes.get('id')}) not found in Neo4j")
                             return False
                         print(f"Updated {subject} {old_predicate} {object} (ID: {old_attributes.get('id')}) to {subject} {new_predicate} {object} (version: {old_attributes.get('version', 1) + 1}) in Neo4j")
-                        # Log operation already handled above
+                        # log operation already handled above
                         return True
                 except Exception as e:
                     print(f"Neo4j update failed: {str(e)}")
@@ -525,7 +525,7 @@ class KnowledgeGraph:
                 for line in f:
                     if line.strip():
                         entry = json.loads(line.strip())
-                        # Strictly match id, subject, and object
+                        # match id, subject, and object
                         if entry['id'] == id and entry['subject'] == subject and entry['object'] == object:
                             timeline.append({
                                 "timestamp": entry['timestamp'],
@@ -554,7 +554,7 @@ class KnowledgeGraph:
                         "src": attr.get('src', 'Unknown'),
                         "original_message": attr.get('original_message', 'N/A')
                     }
-                    break  # Take first matching edge
+                    break  # take first matching edge
         elif self.driver:
             try:
                 with self.driver.session() as session:
