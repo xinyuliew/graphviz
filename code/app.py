@@ -1,0 +1,357 @@
+import time
+import json
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from utils.docker import ensure_docker_running, start_neo4j_container
+from knowledgegraph import KnowledgeGraph
+from languagemodel import LocalLLM
+from openai import OpenAI
+from utils.utils import debug_print
+import difflib
+from datetime import datetime
+
+import os
+
+from collections import deque
+from fuzzywuzzy import fuzz
+
+OPENAI_API_KEY = 0
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+app = Flask(__name__)
+CORS(app)  
+
+short_term_memory = deque(maxlen=20)
+
+
+# Initialize
+ensure_docker_running()
+start_neo4j_container()
+kg = KnowledgeGraph()
+llm = LocalLLM()  # Initialize LLM
+
+# REST API endpoints (knowledge graph)
+@app.route('/api/facts', methods=['GET'])
+def get_facts():
+    facts = kg.get_all_facts()
+    return jsonify(facts)
+
+@app.route('/api/add_fact', methods=['POST'])
+def add_fact():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body cannot be empty", "refresh": False}), 400
+        subject = data.get('subject')
+        predicate = data.get('predicate')
+        object_ = data.get('object')
+        if not all([subject, predicate, object_]):
+            return jsonify({"error": "Missing required fields (subject, predicate, object)", "refresh": False}), 400
+        success = kg.add_fact(subject, predicate, object_, src="Manual", original_message=None)
+        if success:
+            return jsonify({"message": f"Fact added: {subject} {predicate} {object_}", "refresh": True}), 200
+        else:
+            return jsonify({"error": f"Fact already exists: {subject} {predicate} {object_}", "refresh": False}), 409  # Use 409 Conflict status
+    except Exception as e:
+        debug_print(f"Internal server error in add_fact: {str(e)}")
+        return jsonify({"error": f"Internal server error: {str(e)}", "refresh": False}), 500
+
+@app.route('/api/update_fact', methods=['POST'])
+def update_fact():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body cannot be empty", "refresh": False}), 400
+        subject = data.get('subject')
+        old_predicate = data.get('old_predicate')
+        old_object = data.get('old_object')
+        new_predicate = data.get('new_predicate')
+        id = data.get('id')
+        if not all([subject, old_predicate, old_object, new_predicate, id]):
+            return jsonify({"error": "Missing required fields (subject, old_predicate, old_object, new_predicate, id)", "refresh": False}), 400
+        success = kg.update_fact(subject, old_predicate, old_object, new_predicate, new_src="Manual", new_original_message=None)
+        if success:
+            return jsonify({"message": f"Fact updated: {subject} {old_predicate} {old_object} (ID: {id}) to {subject} {new_predicate} {old_object}", "refresh": True}), 200
+        return jsonify({"error": f"Update failed: {subject} {old_predicate} {old_object} (ID: {id}) not found or new predicate is same", "refresh": False}), 404
+    except Exception as e:
+        debug_print(f"Internal server error in update_fact: {str(e)}")
+        return jsonify({"error": f"Internal server error: {str(e)}", "refresh": False}), 500
+
+@app.route('/api/update_timeline', methods=['GET'])
+def update_timeline():
+    subject = request.args.get('subject')
+    object_ = request.args.get('object')
+    id = request.args.get('id')
+    if not all([subject, object_, id]):
+        return jsonify({"error": "Missing required fields (subject, object, id)"}), 400
+    timeline = kg.get_update_timeline(subject, object_, id)
+    return jsonify(timeline)
+    
+
+
+@app.route('/api/delete_fact', methods=['POST'])
+def delete_fact():
+    start_time = time.time()
+
+    data = request.get_json()
+    subject = data.get('subject')
+    predicate = data.get('predicate')
+    object_ = data.get('object')
+
+    if not all([subject, predicate, object_]):
+        duration = (time.time() - start_time) * 1000  # 毫秒
+        print(f"[MONITOR] /api/delete_fact took {duration:.2f}ms (400 Missing fields)")
+        return jsonify({"error": "Missing required fields", "refresh": False}), 400
+
+    success = kg.delete_fact(subject, predicate, object_)
+    duration = (time.time() - start_time) * 1000
+
+    if success:
+        print(f"[MONITOR] /api/delete_fact took {duration:.2f}ms (200 OK)")
+        return jsonify({"message": f"Fact deleted: {subject} {predicate} {object_}", "refresh": True})
+
+    print(f"[MONITOR] /api/delete_fact took {duration:.2f}ms (400 Not found)")
+    return jsonify({"error": f"Delete failed: {subject} {predicate} {object_} not found", "refresh": False}), 400
+
+@app.route('/api/delete_all_facts', methods=['POST'])
+def delete_all_facts():
+    try:
+        success = kg.delete_all_facts()
+        if success:
+            return jsonify({"message": "All facts deleted", "refresh": True}), 200
+        return jsonify({"error": "Failed to delete all facts", "refresh": False}), 500
+    except Exception as e:
+        debug_print(f"Internal server error in delete_all_facts: {str(e)}")
+        return jsonify({"error": f"Internal server error: {str(e)}", "refresh": False}), 500
+
+@app.route('/api/query_entity', methods=['GET'])
+def query_entity():
+    entity = request.args.get('entity')
+    if not entity:
+        return jsonify({"error": "Entity parameter is required"}), 400
+    facts = kg.query_facts_about(entity)
+    print(f"[DEBUG] query_entity response: {json.dumps(facts, ensure_ascii=False)}")  # Debug log
+    return jsonify(facts)
+
+@app.route('/api/query_predicate', methods=['GET'])
+def query_predicate():
+    predicate = request.args.get('predicate')
+    if not predicate:
+        return jsonify({"error": "Predicate parameter is required"}), 400
+    facts = kg.query_by_predicate(predicate)
+    print(f"[DEBUG] query_predicate response: {json.dumps(facts, ensure_ascii=False)}")  # Debug log
+    return jsonify(facts)
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.get_json()
+        message = data.get('message')
+        if not message:
+            debug_print("No message provided in request")
+            return jsonify({"error": "Message cannot be empty", "refresh": False}), 400
+
+        # -----------------------------
+        # 记录意图提取开始时间
+        intent_start = time.perf_counter()
+        intent_result = llm.analyze_intent_with_gpt(message)
+        intent_end = time.perf_counter()
+        debug_print(f"Intent analysis result: {intent_result}")
+        debug_print(f"Intent extraction time: {intent_end - intent_start:.6f} seconds")
+        # -----------------------------
+
+        operation_message = None
+        facts = []
+        refresh = False
+        memory_text = "No related facts found"
+
+        # -----------------------------
+        # 处理 add/update/delete/query intent
+        if intent_result.get("add"):
+            add_data = intent_result["add"]
+            try:
+                success = kg.add_fact(
+                    subject=add_data["subject"],
+                    predicate=add_data["predicate"],
+                    obj=add_data["object"],
+                    src="Chat",
+                    original_message=message
+                )
+                if success:
+                    operation_message = f"Fact added: {add_data['subject']} {add_data['predicate']} {add_data['object']}."
+                    refresh = True
+                else:
+                    operation_message = ""
+            except Exception as e:
+                debug_print(f"Error adding fact: {str(e)}")
+                operation_message = ""
+
+        elif intent_result.get("update"):
+            update_data = intent_result["update"]
+            try:
+                if update_data["old_predicate"] == update_data["new_predicate"]:
+                    operation_message = f"New predicate {update_data['new_predicate']} is same as old predicate {update_data['old_predicate']}, skipping update."
+                else:
+                    success = kg.update_fact(
+                        subject=update_data["subject"],
+                        old_predicate=update_data["old_predicate"],
+                        object=update_data["object"],
+                        new_predicate=update_data["new_predicate"],
+                        new_src="Chat",
+                        new_original_message=message
+                    )
+                    if success:
+                        operation_message = f"Fact updated: {update_data['subject']} {update_data['old_predicate']} {update_data['object']} to {update_data['subject']} {update_data['new_predicate']} {update_data['object']}."
+                        refresh = True
+                    else:
+                        # 尝试添加为新事实
+                        add_success = kg.add_fact(
+                            subject=update_data["subject"],
+                            predicate=update_data["new_predicate"],
+                            obj=update_data["object"],
+                            src="Chat",
+                            original_message=message
+                        )
+                        if add_success:
+                            operation_message = f"Original fact not found for update, added new fact: {update_data['subject']} {update_data['new_predicate']} {update_data['object']}."
+                            refresh = True
+                        else:
+                            operation_message = ""
+            except Exception as e:
+                debug_print(f"Error updating fact: {str(e)}")
+                operation_message = ""
+
+        elif intent_result.get("delete"):
+            delete_data = intent_result["delete"]
+            try:
+                success = kg.delete_fact(
+                    subject=delete_data["subject"],
+                    predicate=delete_data["predicate"],
+                    object=delete_data["object"]
+                )
+                if success:
+                    operation_message = f"Fact deleted: {delete_data['subject']} {delete_data['predicate']} {delete_data['object']}."
+                    refresh = True
+                else:
+                    operation_message = ""
+            except Exception as e:
+                debug_print(f"Error deleting fact: {str(e)}")
+                operation_message = ""
+
+        elif intent_result.get("query"):
+            query_data = intent_result["query"]
+            # 获取所有事实
+            facts = kg.get_all_facts()
+            memory_text = "\n".join([
+                f"{i+1}. {fact['subject']} {fact['predicate']} {fact['object']} (Created At: {fact['created_at']})"
+                for i, fact in enumerate(facts)
+            ]) if facts else "No related facts found"
+
+        # -----------------------------
+        # recent messages for prompt
+        recent_messages_for_prompt = "No recent messages"
+        if intent_result.get("query") and query_data and query_data.get("keywords"):
+            similar_messages = []
+            max_messages = 5
+            similarity_threshold = 0.75
+            recent_count = min(3, len(short_term_memory))
+            for entry in list(reversed(short_term_memory))[:recent_count]:
+                max_similarity = 0
+                for keyword in query_data["keywords"]:
+                    if keyword.lower() in entry["message"].lower().split() or \
+                       difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio() >= similarity_threshold:
+                        max_similarity = max(max_similarity, difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio())
+                similar_messages.append((entry, max_similarity))
+
+            remaining_slots = max_messages - len(similar_messages)
+            if remaining_slots > 0:
+                for entry in list(reversed(short_term_memory))[recent_count:]:
+                    max_similarity = 0
+                    for keyword in query_data["keywords"]:
+                        if keyword.lower() in entry["message"].lower().split() or \
+                           difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio() >= similarity_threshold:
+                            max_similarity = max(max_similarity, difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio())
+                            similar_messages.append((entry, max_similarity))
+
+            similar_messages.sort(key=lambda x: x[1], reverse=True)
+            similar_messages = similar_messages[:max_messages]
+            recent_messages_for_prompt = "\n".join([
+                f"{i+1}. {entry['message']} (Timestamp: {entry['timestamp']})"
+                for i, (entry, _) in enumerate(similar_messages)
+            ]) if similar_messages else "No relevant recent messages"
+
+        debug_print(f"Retrieved facts: {memory_text}")
+
+        full_prompt = f"""
+                            Known facts:
+                            {memory_text}
+
+                            Recent messages:
+                            {recent_messages_for_prompt}
+
+                            User question:
+                            {message}
+
+                            Response(Please answer in the language used in the User question):
+                        """
+
+        debug_print(f"Full prompt sent to LLM: {full_prompt}")
+
+        # -----------------------------
+        # 记录 GPT 响应生成时间
+        gpt_start = time.perf_counter()
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant managing a memory system."},
+                    {"role": "user", "content": full_prompt}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            response = response.choices[0].message.content.strip()
+        except Exception as e:
+            debug_print(f"OpenAI error: {str(e)}")
+            return jsonify({"error": f"OpenAI failed to generate response: {str(e)}", "refresh": False}), 500
+        gpt_end = time.perf_counter()
+        debug_print(f"GPT response generation time: {gpt_end - gpt_start:.6f} seconds")
+        # -----------------------------
+
+        if not response or response.strip() == '':
+            debug_print("OpenAI returned empty or invalid response")
+            return jsonify({"error": "OpenAI failed to generate valid response", "refresh": False}), 500
+
+        response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL | re.IGNORECASE)
+        response = re.sub(r'\n\s*\n', '\n', response).strip()
+
+        if operation_message:
+            response = f"{operation_message}\n{response}"
+
+        # 添加短期记忆
+        try:
+            short_term_memory.append({
+                "message": message,
+                "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            })
+            debug_print("Current message added to short-term memory")
+        except AttributeError as e:
+            debug_print(f"Datetime error: {str(e)}")
+            return jsonify({"error": f"Failed to record message due to datetime issue: {str(e)}", "refresh": False}), 500
+
+        debug_print(f"Final processed response: {response}")
+        return jsonify({
+            "response": response,
+            "recent_messages": recent_messages_for_prompt,
+            "refresh": refresh
+        })
+
+    except Exception as e:
+        debug_print(f"Internal server error: {str(e)}")
+        return jsonify({"error": f"Internal server error: {str(e)}", "refresh": False}), 500
+
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
+    # python -m http.server 8000
+    # http://localhost:8000/index.html
