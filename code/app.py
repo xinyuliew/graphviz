@@ -1,6 +1,6 @@
 import time
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from utils.docker import ensure_docker_running, start_neo4j_container
 from knowledgegraph import KnowledgeGraph
@@ -11,9 +11,7 @@ import difflib
 from datetime import datetime
 import re
 import os
-
 from collections import deque
-from fuzzywuzzy import fuzz
 
 OPENAI_API_KEY = 0
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -27,12 +25,21 @@ short_term_memory = deque(maxlen=20)
 ensure_docker_running()
 start_neo4j_container()
 kg = KnowledgeGraph()
+import_data = kg.import_csv_once('/Users/trixieliew/Desktop/social_media_kg_project/data/reddit_vaccine_discourse.csv')  # Import data from CSV
+
 llm = LocalLLM()  # Initialize LLM
 
-# REST API endpoints (knowledge graph)
+@app.route('/')
+def index():
+    return render_template('index.html')
+    
+# API endpoint with pagination
 @app.route('/api/facts', methods=['GET'])
 def get_facts():
-    facts = kg.get_all_facts()
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 100))
+    skip = (page - 1) * page_size
+    facts = kg.get_facts_batch(skip=skip, limit=page_size)
     return jsonify(facts)
 
 @app.route('/api/add_fact', methods=['POST'])
@@ -128,8 +135,13 @@ def query_entity():
     entity = request.args.get('entity')
     if not entity:
         return jsonify({"error": "Entity parameter is required"}), 400
-    facts = kg.query_facts_about(entity)
-    print(f"[DEBUG] query_entity response: {json.dumps(facts, ensure_ascii=False)}")  
+    try:
+        limit = int(request.args.get('limit', 100))
+    except ValueError:
+        limit = 100
+
+    facts = kg.query_by_entity(entity)
+    facts = facts[:limit]
     return jsonify(facts)
 
 @app.route('/api/query_predicate', methods=['GET'])
@@ -137,8 +149,27 @@ def query_predicate():
     predicate = request.args.get('predicate')
     if not predicate:
         return jsonify({"error": "Predicate parameter is required"}), 400
+    try:
+        limit = int(request.args.get('limit', 100))
+    except ValueError:
+        limit = 100
+
     facts = kg.query_by_predicate(predicate)
-    print(f"[DEBUG] query_predicate response: {json.dumps(facts, ensure_ascii=False)}")  
+    facts = facts[:limit]
+    return jsonify(facts)
+
+@app.route('/api/query_object', methods=['GET'])
+def query_object():
+    obj = request.args.get('object')
+    if not obj:
+        return jsonify({"error": "Object parameter is required"}), 400
+    try:
+        limit = int(request.args.get('limit', 100))
+    except ValueError:
+        limit = 100
+
+    facts = kg.query_by_object(obj)
+    facts = facts[:limit]
     return jsonify(facts)
 
 @app.route('/api/chat', methods=['POST'])
@@ -351,6 +382,6 @@ def chat():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
-    # python -m http.server 8000
+    app.run(debug=True)
+        # python -m http.server 8000
     # http://localhost:8000/index.html

@@ -1,35 +1,119 @@
+from cgitb import text
 import networkx as nx
 from neo4j import GraphDatabase
 from datetime import datetime
 import uuid
 import json
 import difflib
+import pandas as pd
+from tqdm import tqdm 
+import os
 
 class KnowledgeGraph:
     def __init__(self, neo4j_uri="bolt://localhost:7687", user="neo4j", password="password"):
         self.graph = nx.MultiDiGraph()
+        self.csv_loaded = False  # Flag to prevent re-import
+
         try:
             self.driver = GraphDatabase.driver(neo4j_uri, auth=(user, password))
             print("Connected to Neo4j database")
             self.sync_from_neo4j()
-            # with self.driver.session() as session:
-            #     session.run("MATCH (n) DETACH DELETE n")  # Clear database (optional)
-            #     print("Neo4j database cleared")
+            #with self.driver.session() as session:
+            #    session.run("MATCH (n) DETACH DELETE n")  # Clear database (optional)
+            #    print("Neo4j database cleared")
         except Exception as e:
             print(f"Failed to connect to Neo4j: {str(e)}")
             self.driver = None
 
-    def sync_from_neo4j(self):
-        """Sync data from Neo4j to NetworkX graph"""
-        if self.driver:
-            try:
-                with self.driver.session() as session:
-                    result = session.run("""
+    # ---------------------------
+    # CSV Import (only once)
+    # ---------------------------
+    def import_csv_once(self, csv_path):
+        if not self.driver:
+            print("Neo4j not connected")
+            return
+        flag_file = "csv_imported.flag"
+        if os.path.exists(flag_file):
+            print("CSV data already imported, skipping")
+            return
+        print(f"Importing CSV data from {csv_path} into Neo4j / KnowledgeGraph")
+        df = pd.read_csv(csv_path)
+        print(f"Total rows in CSV: {len(df)}")
+        max_rows = 100  # adjust for how much you want to show
+
+        for i, (_, row) in enumerate(tqdm(df.iterrows(), total=len(df))):
+            if i >= max_rows:
+                break   
+            post_id = str(row['id'])
+            author = str(row['author'])
+            parent_id = row['Parent']  
+            text = str(row['text'])
+            
+            stance = str(row.get('Stance')) if pd.notna(row.get('Stance')) else 'None'
+            sentiment = str(row.get('Sentiment')) if pd.notna(row.get('Sentiment')) else 'None'
+
+            # Author -> Post
+            self.add_fact(author, 'POSTED', post_id, src='CSV Import', original_message=text)
+
+            # Only add reply relationships if this is NOT a root post
+            if pd.notna(parent_id) and str(parent_id) != '1':
+                self.add_fact(post_id, 'REPLIES_TO', str(parent_id), src='CSV Import', original_message=text)
+
+                # Post -> Stance (always add)
+            self.add_fact(post_id, 'HAS_STANCE', stance, src='CSV Import', original_message=text)
+
+            # Post -> Sentiment (always add)
+            self.add_fact(post_id, 'HAS_SENTIMENT', sentiment, src='CSV Import', original_message=text)
+
+        # Create the flag file to mark CSV as imported
+        with open(flag_file, "w") as f:
+            f.write("done")
+
+        print("CSV import complete!")
+    
+    def get_facts_batch(self, skip=0, limit=100):
+        """Fetch a batch of facts from Neo4j."""
+        if not self.driver:
+            return []
+
+        with self.driver.session() as session:
+            query = f"""
+                MATCH (s:Entity)-[r:REL]->(o:Entity)
+                RETURN s.name AS subject, o.name AS object, r.predicate AS predicate,
+                       r.created_at AS created_at, r.src AS src,
+                       r.original_message AS original_message, r.version AS version
+                SKIP {skip} LIMIT {limit}
+            """
+            results = session.run(query)
+            return [dict(record) for record in results]
+        
+    def sync_from_neo4j(self, batch_size=10, limit=100):
+        """Sync data from Neo4j to NetworkX graph in batches to avoid freezing"""
+        if not self.driver:
+            print("Neo4j driver unavailable, cannot sync")
+            return
+
+        skip = 0
+        total_edges = 0
+        self.graph.clear()  # Clear existing graph once at the start
+
+        try:
+            with self.driver.session() as session:
+                while True:
+                    query = f"""
                         MATCH (s:Entity)-[r:REL]->(o:Entity)
-                        RETURN s.name AS subject, o.name AS object, r.predicate AS predicate, r.created_at AS created_at, r.src AS src, r.original_message AS original_message, r.version AS version
-                    """)
-                    self.graph.clear()  # Clear existing graph to avoid duplicates
-                    for rec in result:
+                        RETURN s.name AS subject, o.name AS object, r.predicate AS predicate,
+                            r.created_at AS created_at, r.src AS src,
+                            r.original_message AS original_message, r.version AS version
+                        SKIP {skip} LIMIT {batch_size}
+                    """
+                    result = session.run(query)
+                    records = list(result)
+
+                    if not records:
+                        break  # No more records
+
+                    for rec in records:
                         self.graph.add_edge(
                             rec['subject'], 
                             rec['object'], 
@@ -39,11 +123,17 @@ class KnowledgeGraph:
                             original_message=rec['original_message'] or 'N/A',
                             version=rec['version'] or 1
                         )
-                    print(f"Synced {len(self.graph.edges)} triples to in-memory graph")
-            except Exception as e:
-                print(f"Failed to sync from Neo4j: {str(e)}")
-        else:
-            print("Neo4j driver unavailable, cannot sync")
+
+                    total_edges += len(records)
+                    skip += batch_size
+
+                    if limit and total_edges >= limit:
+                        break
+
+            print(f"Synced {total_edges} triples to in-memory graph")
+
+        except Exception as e:
+            print(f"Failed to sync from Neo4j: {str(e)}")
 
     def log_operation(self, operation_type, details):
         """Log operations (add, update, delete, delete_all) to operation_log.jsonl"""
@@ -139,7 +229,7 @@ class KnowledgeGraph:
 
         return True
 
-    def query_facts_about(self, entity):
+    def query_by_entity(self, entity):
         facts = []
         fact_keys = set()
         if self.driver:
@@ -149,6 +239,7 @@ class KnowledgeGraph:
                         MATCH (s:Entity {name: $entity})-[r:REL]->(o:Entity)
                         RETURN s.name AS subject, r.predicate AS predicate, o.name AS object, r.id AS id, r.created_at AS created_at, r.src AS src, r.original_message AS original_message, r.version AS version
                         ORDER BY r.version DESC
+                        LIMIT 50
                     """, entity=entity)
                     for rec in result:
                         triple = (rec['subject'], rec['predicate'], rec['object'])
@@ -240,7 +331,7 @@ class KnowledgeGraph:
         print(f"Found {len(facts)} unique records for predicate {predicate}")
         return facts
     
-    def query_facts_by_object(self, object_name):
+    def query_by_object(self, object_name):
         """Query facts where the given name is the object of the triple"""
         facts = []
         fact_keys = set()

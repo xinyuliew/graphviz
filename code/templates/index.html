@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graph Web</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:ital,wght@0,400;1,400&family=Roboto+Slab:wght@600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="main-title">Recall Nexus</h1>
+        <div class="facts-header create-memory">
+            <h3>Create New Memory</h3>
+            <p class="create-guide">Enter a triple (e.g., Alice loves Bob) to record a relationship</p>
+            <div class="example-card" onclick="fillExample()">
+                <span class="example-triple">Example: Alice loves Bob</span>
+                <span class="example-hint">Click to fill example</span>
+            </div>
+            <div class="form-group">
+                <label>Subject:</label>
+                <input type="text" id="subject" placeholder="e.g., Alice" title="Enter the subject of the relationship (e.g., person or thing)">
+                <label>Predicate:</label>
+                <input type="text" id="predicate" placeholder="e.g., loves" title="Enter the relationship between subject and object">
+                <label>Object:</label>
+                <input type="text" id="object" placeholder="e.g., Bob" title="Enter the object of the relationship (e.g., person or thing)">
+                <button class="create-button" onclick="addFact()">➕ Create</button>
+            </div>
+            <p id="form-hint" class="form-hint"></p>
+        </div>
+        
+        <div class="facts-header query-section">
+            <h3>Explore Memories</h3>
+            <p class="query-guide">Search or manage your memory triples</p>
+            <div class="example-card" onclick="fillSearchExample()">
+                <span class="example-triple">Example: Search for Alice</span>
+                <span class="example-hint">Click to fill example</span>
+            </div>
+            <div class="form-group">
+                <button id="show-all-button" onclick="showAllFacts()" title="View all memory triples">🔍 Show All</button>
+                <button id="delete-all-button" onclick="deleteAllFacts()" title="Delete all memory triples (irreversible)">🗑️ Delete All</button>
+            </div>
+            <div class="form-group">
+                <input type="text" id="search-input" placeholder="e.g., Alice or loves" title="Enter an entity (e.g., Alice) or predicate (e.g., loves)">
+                <button onclick="queryEntity()" title="Search for triples by entity">Search Entity</button>
+                <button onclick="queryPredicate()" title="Search for triples by predicate">Search Predicate</button>
+                <button onclick="queryObject()" title="Search for triples by object">Search Object</button>
+            </div>
+            <p id="search-hint" class="form-hint"></p>
+            <div id="facts">
+                <ul id="facts-list"></ul>
+                <div id="pagination"></div>
+            </div>
+        </div>
+        <div class="graph-section">
+            
+            <h3>Memory Graph</h3>
+            
+            <p class="graph-guide">Visualize relationships between entities</p>
+            <label for="node-limit">Number of nodes to display:</label>
+            <input type="number" id="node-limit" min="1" max="500" value="50">
+            <button onclick="fetchFactsWithLimit()">Apply</button>
+            <div id="cy"></div>
+        </div>
+        
+        <h2 class="chat-title">Ask About Memories</h2>
+        <div class="chat-section">
+            <p class="chat-guide">Ask questions about your memories, e.g., "What does Alice like?"</p>
+            <div id="chat-container"></div>
+            <div id="loading-indicator" style="display: none; text-align: center; padding: 10px; color: #888;">
+                <span>I'm thinking...</span> 
+            </div>
+            <div class="form-group chat-input-group">
+                <input type="text" id="chat-input" placeholder="e.g., What does Alice like?" title="Ask a question about your memories">
+                <button id="send-chat" onclick="sendChat()">💬 Send</button>
+            </div>
+            <p id="chat-hint" class="form-hint"></p>
+        </div>
+
+        <!-- Update modal -->
+        <div id="update-modal" class="modal">
+            <div class="modal-content">
+                <h3>Update Fact</h3>
+                <div class="form-group">
+                    <label>ID:</label><input type="text" id="modal-id" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Subject:</label><input type="text" id="modal-subject" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Old Predicate:</label><input type="text" id="modal-old-predicate" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Old Object:</label><input type="text" id="modal-old-object" readonly>
+                </div>
+                <div class="form-group">
+                    <label>New Predicate:</label><input type="text" id="modal-new-predicate">
+                </div>
+                <button class="update" onclick="submitUpdate()">Update</button>
+                <button class="close-button" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Details modal -->
+        <div id="details-modal" class="modal">
+            <div class="modal-content">
+                <h3>Fact Details</h3>
+                <div class="details-field">
+                    <label>Created At:</label><span id="details-created-at"></span>
+                </div>
+                <div class="details-field">
+                    <label>Source:</label><span id="details-source"></span>
+                </div>
+                <div class="details-field">
+                    <label>Original Message:</label><span id="details-original-message"></span>
+                </div>
+                <div class="details-field">
+                    <label>Version:</label><span id="details-version"></span>
+                </div>
+                <h4>Update Timeline</h4>
+                <div id="timeline-list"></div>
+                <button class="close-button" onclick="closeDetailsModal()">Close</button>
+            </div>
+        </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
