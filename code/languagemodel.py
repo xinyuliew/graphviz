@@ -3,7 +3,7 @@ import spacy
 import re
 from typing import Dict, Optional
 import json
-from config import debug_print
+from utils.utils import debug_print
 
 class LocalLLM:
     def __init__(self, model_name="deepseek-r1:7b"):
