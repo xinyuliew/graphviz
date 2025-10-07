@@ -1,20 +1,23 @@
-/* 全局样式 */
+:root{
+    --falcon-font-sans-serif: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji",
+               "Segoe UI Emoji", "Segoe UI Symbol";
+}
 body {
-    font-family: 'Roboto', sans-serif; /* 主字体: Roboto */
-    margin: 100px 300px; /* 增加左右留白 */
-    background: linear-gradient(to bottom, #ECF4FE, #C5E1FA); /* 柔和蓝色渐变 */
+    font-family: var(--falcon-font-sans-serif);
+    background: #F7F8FC;
     color: #333;
+    margin:0;
 }
 
 h1, h2, h3 {
-    font-family: 'Roboto Slab', serif; /* 标题字体: Roboto Slab */
-    color: #0D47A1;
+    font-family: var(--falcon-font-sans-serif);
+    color: #004961;
 }
 
 label {
     display: inline-block;
-    width: 100px;
-    color: #0D47A1;
+    color: #004961;
 }
 
 input {
@@ -23,10 +26,9 @@ input {
     border: 1px solid #BBDEFB;
     border-radius: 4px;
     background-color: #F5FAFF;
-    font-family: 'Open Sans', sans-serif; /* 辅助字体: Open Sans */
+    font-family: var(--falcon-font-sans-serif);
 }
 
-/* 通用按钮样式 */
 button {
     padding: 6px 12px;
     font-size: 14px;
@@ -35,7 +37,7 @@ button {
     border: none;
     border-radius: 5px;
     transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-    font-family: 'Roboto', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
 }
 
 button:hover {
@@ -45,15 +47,24 @@ button:hover {
 
 .form-group button,
 #send-chat,
-#show-all-button {
-    background: linear-gradient(to bottom, #2196F3, #1976D2);
+#show-all-button
+#apply-node-limit {
+    background: #36485C;
     color: white;
+}
+
+.form-group select {
+    padding: 6px;
+    border: 1px solid #BBDEFB;
+    border-radius: 4px;
+    background-color: #F5FAFF;
+    font-family: var(--falcon-font-sans-serif);
 }
 
 .form-group button:hover,
 #send-chat:hover,
 #show-all-button:hover {
-    background: linear-gradient(to bottom, #42A5F5, #1565C0);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 #create-button {
@@ -69,17 +80,13 @@ button:hover {
 }
 
 #delete-all-button {
-    background: linear-gradient(to bottom, #d32f2f, #b71c1c);
+    background: #d32f2f !important;
     color: white;
     font-weight: 600;
     position: relative;
-    padding-left: 28px;
-    animation: pulse 1.5s infinite;
-    padding: 8px 16px;
 }
 
 #delete-all-button::before {
-    content: '⚠';
     position: absolute;
     left: 8px;
     top: 50%;
@@ -94,7 +101,6 @@ button:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* 事实条目按钮 */
 .fact-buttons {
     display: flex;
     gap: 8px;
@@ -103,7 +109,7 @@ button:hover {
 .fact-buttons button {
     padding: 5px 10px;
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 600;
     cursor: pointer;
     border: none;
     border-radius: 4px;
@@ -119,21 +125,21 @@ button:hover {
 }
 
 .fact-buttons button.delete {
-    background: linear-gradient(to bottom, #ff6b6b, #d43f3f);
+    background: #d32f2f;
     color: white;
 }
 
 .fact-buttons button.update {
-    background: linear-gradient(to bottom, #2196F3, #1976D2);
+    background: #4CAF50;
     color: white;
 }
 
 .fact-buttons button.details {
-    background: linear-gradient(to bottom, #4CAF50, #388E3C);
+    background: #2196F3;
     color: white;
 }
 
-/* 动画 */
+
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.03); }
@@ -147,7 +153,6 @@ button:hover {
     80%, 100% { text-shadow: .25em 0 0 #888, .5em 0 0 #888; }
 }
 
-/* 表单和容器 */
 .form-container {
     margin-bottom: 20px;
 }
@@ -157,9 +162,10 @@ button:hover {
     display: flex;
     align-items: center;
     gap: 10px;
+    font-size: 12px;
+    font-weight: 500;
 }
 
-/* 图谱容器 */
 #cy {
     width: 100%;
     height: 500px;
@@ -167,20 +173,16 @@ button:hover {
     background-color: #FFFFFF;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px; /* 增加底部间距 */
+    margin-bottom: 30px;
 }
 
-/* 事实列表容器 */
 #facts {
-    border: 1px solid #90CAF9;
     padding: 0;
     min-height: 100px;
     max-height: 350px;
     overflow-y: auto;
-    background-color: #F5FAFF;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    margin-bottom: 30px; /* 增加底部间距 */
+    margin-bottom: 30px; 
 }
 
 #facts::-webkit-scrollbar {
@@ -197,8 +199,7 @@ button:hover {
 }
 
 #facts {
-    scrollbar-width: thin;
-    scrollbar-color: #90CAF9 #F5FAFF;
+    scrollbar-width: thick;
 }
 
 #facts-list {
@@ -239,8 +240,8 @@ button:hover {
 #facts li .triple {
     font-weight: 600;
     font-size: 16px;
-    color: #0D47A1;
-    font-family: 'Roboto Slab', serif;
+    color: #004961;
+    font-family: var(--falcon-font-sans-serif);
     flex: 1;
 }
 
@@ -248,13 +249,13 @@ button:hover {
     color: #555;
     font-style: italic;
     font-size: 12px;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
 }
 
 #facts li .field-value {
     color: #0074D9;
     font-size: 12px;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
 }
 
 #facts li .separator {
@@ -263,9 +264,8 @@ button:hover {
     font-size: 12px;
 }
 
-/* 分页样式 */
 #pagination {
-    margin-top: 10px;
+    margin-top: 2rem;
     text-align: center;
     padding: 0 12px;
 }
@@ -274,7 +274,7 @@ button:hover {
     padding: 6px 12px;
     margin: 0 5px;
     cursor: pointer;
-    background: linear-gradient(to bottom, #2196F3, #1976D2);
+    background: #004961;
     color: white;
     border: none;
     border-radius: 4px;
@@ -284,7 +284,7 @@ button:hover {
 }
 
 #pagination button:disabled {
-    background: #ccc;
+    background: #B0BEC5;
     cursor: not-allowed;
     box-shadow: none;
 }
@@ -298,19 +298,17 @@ button:hover {
 #page-info {
     margin: 0 10px;
     font-weight: bold;
-    color: #0D47A1;
+    color: #004961;
 }
 
-/* 搜索输入框 */
 #search-input {
     padding: 6px;
-    width: 200px;
+    width: 1080px;
     border: 1px solid #BBDEFB;
     border-radius: 4px;
     background-color: #F5FAFF;
 }
 
-/* 模态框样式 */
 .modal {
     display: none;
     position: fixed;
@@ -390,24 +388,22 @@ button:hover {
     color: white;
 }
 
-/* 详情模态框 */
+
 #details-modal .modal-content {
-    width: 600px; /* 增加宽度 */
+    width: 600px; 
 }
 
-/* 时间显示样式 */
 .time-display {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background-color: #E3F2FD; /* 浅蓝背景 */
+    background-color: #E3F2FD; 
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
-    color: #0D47A1;
+    color: #004961;
 }
 
-/* 时间线容器 */
 #timeline-list {
     max-height: 200px;
     overflow-y: auto;
@@ -431,8 +427,7 @@ button:hover {
 }
 
 #timeline-list {
-    scrollbar-width: thin;
-    scrollbar-color: #90CAF9 #F5FAFF;
+    scrollbar-width: thick;
 }
 
 #timeline-list ul {
@@ -468,127 +463,106 @@ button:hover {
 #timeline-list li .triple {
     font-weight: 600;
     font-size: 16px;
-    color: #0D47A1;
-    font-family: 'Roboto Slab', serif;
+    color: #004961;
+    font-family: var(--falcon-font-sans-serif);
 }
 
 #timeline-list li .timeline-info {
     font-size: 12px;
     color: #555;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
     display: flex;
-    gap: 10px; /* 增加 src 和 time 间距 */
+    gap: 10px;
 }
 
 #timeline-list .no-timeline {
     color: #888;
     font-style: italic;
     text-align: center;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
 }
 
-/* 主标题 */
 .main-title {
-    text-align: center; /* 居中显示 */
-    font-family: 'Roboto Slab', serif;
-    font-size: 64px; /* 更大字体 */
-    font-weight: 700; /* 更粗字体 */
-    color: #FFFFFF; /* 白色文字 */
-    background: linear-gradient(to right, #a2a2ad, #0ea6d4); /* 醒目蓝色渐变 */
-    padding: 15px 30px; /* 内边距 */
-    border-radius: 8px; /* 圆角 */
-    margin: 20px auto; /* 居中，上下间距 */
-    max-width: 600px; /* 限制宽度 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* 更强阴影 */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* 动画 */
+    font-weight: 800;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.87);
+    font-size: 1.5rem;
+    text-align: center;
+    font-family: var(--falcon-font-sans-serif);
+    padding: 15px 30px; 
+    margin: 0 auto 1rem auto; 
+    background: #212631;
 }
 
-.main-title:hover {
-    transform: scale(1.08); /* 更大缩放 */
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3); /* 更强悬停阴影 */
-}
 
-/* 事实列表头部 */
+
 .facts-header {
-    background: linear-gradient(to bottom, #BBDEFB, #90CAF9);
     padding: 16px;
-    border-bottom: 1px solid #2196F3;
     border-radius: 8px 8px 0 0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px; /* 增加底部间距 */
+    margin-bottom: 30px; 
 }
 
 .facts-header h3 {
     margin: 0 0 12px 0;
-    color: #0D47A1;
+    color: #004961;
     font-size: 20px;
     font-weight: 600;
-    font-family: 'Roboto Slab', serif;
+    font-family: var(--falcon-font-sans-serif);
 }
 
-/* 创建记忆区域 */
 .facts-header.create-memory {
-    background: linear-gradient(to bottom, #E3F2FD, #BBDEFB);
-    border: 1px solid #90CAF9;
+     background: #FFFFFF;
+    box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
     border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 50px;
+    margin: 2rem 3rem;
 }
 
-/* 查询区域 */
 .facts-header.query-section {
-    background: linear-gradient(to bottom, #E3F2FD, #BBDEFB); /* 温暖蓝色渐变 */
-    border: 1px solid #90CAF9;
+    background: #FFFFFF;
+    box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
     border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 50px;
+    margin: 1rem 3rem;
 }
 
-/* 图谱区域 */
 .graph-section {
-    background: linear-gradient(to bottom, #E3F2FD, #BBDEFB);
-    border: 1px solid #90CAF9;
+    background: #FFFFFF;
+    box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
     border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 50px;
+    margin: 1rem 3rem;
+
 }
 
-/* 聊天区域 */
 .chat-section {
-    background: linear-gradient(to bottom, #E3F2FD, #BBDEFB);
-    border: 1px solid #90CAF9;
+    background: #FFFFFF;
+    box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
     border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 50px;
-    background-color: #f9f9f9; /* 合并背景色，如果需要覆盖渐变 */
+    margin: 1rem 3rem;
 }
 
 .chat-title {
-    font-family: 'Roboto Slab', serif;
-    color: #0D47A1;
+    font-family: var(--falcon-font-sans-serif);
+    color: #004961;
     font-size: 20px;
     margin-bottom: 20px;
 }
 
-/* 引导描述 */
 .create-guide,
 .query-guide,
 .graph-guide,
 .chat-guide {
-    color: #0D47A1;
+    color: #004961;
     font-size: 14px;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
     margin: 8px 0 12px;
 }
 
-/* 示例卡片 */
 .example-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E3F2FD;
+    background-color: rgba(121, 80, 242, 0.1);
+    border: 1px solid rgba(121, 80, 242, 0.5);
     border-radius: 6px;
     padding: 10px 15px;
     margin-bottom: 12px;
@@ -607,27 +581,25 @@ button:hover {
 .example-triple {
     font-weight: 600;
     font-size: 14px;
-    color: #0D47A1;
-    font-family: 'Roboto Slab', serif;
+    color:#7950f2;
+    font-family: var(--falcon-font-sans-serif);
 }
 
 .example-hint {
     font-size: 12px;
     color: #555;
     font-style: italic;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
 }
 
-/* 表单提示 */
 .form-hint {
-    color: #0D47A1;
+    color: #004961;
     font-size: 12px;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
     margin-top: 8px;
     min-height: 20px;
 }
 
-/* 输入框聚焦效果 */
 .facts-header.create-memory input:focus,
 .facts-header.query-section input:focus,
 .chat-section input:focus {
@@ -636,7 +608,6 @@ button:hover {
     outline-offset: 2px;
 }
 
-/* 聊天容器 */
 #chat-container {
     display: flex;
     flex-direction: column;
@@ -645,17 +616,16 @@ button:hover {
     margin-top: 40px;
     border: 1px solid #BBDEFB;
     padding: 15px;
-    height: 800px; /* 设置固定高度，初始状态下始终保持 */
-    max-height: 600px; /* 保持最大高度限制，内容多时可滚动 */
-    overflow-y: auto; /* 只允许垂直滚动 */
-    overflow-x: hidden; /* 禁止水平滚动 */
+    height: 800px; 
+    max-height: 600px; 
+    overflow-y: auto; 
+    overflow-x: hidden; 
     background-color: #F5FAFF;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 
-/* 通用消息样式 */
 .message {
     max-width: 65%;
     padding: 10px 15px;
@@ -664,10 +634,8 @@ button:hover {
     word-wrap: break-word;
     word-break: break-word;
     white-space: pre-wrap;
-    margin: 8px 30px; /* 保持消息与边框的距离 */
+    margin: 8px 30px; 
 }
-
-/* 用户消息：右对齐，蓝色气泡 */
 .user-message {
     align-self: flex-end;
     background-color: #0074D9;
@@ -675,7 +643,6 @@ button:hover {
     border-bottom-right-radius: 5px;
 }
 
-/* 助手消息：左对齐，灰色气泡 */
 .model-message {
     align-self: flex-start;
     background-color: #e5e5e5;
@@ -683,7 +650,6 @@ button:hover {
     border-bottom-left-radius: 5px;
 }
 
-/* 添加简单头像（使用Emoji或图标） */
 .user-message::before {
     content: '🧑';
     position: absolute;
@@ -700,7 +666,6 @@ button:hover {
     font-size: 20px;
 }
 
-/* 输入组样式 */
 .chat-input-group {
     display: flex;
     gap: 10px;
@@ -713,30 +678,28 @@ button:hover {
     border: 1px solid #BBDEFB;
     border-radius: 4px;
     background-color: #F5FAFF;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--falcon-font-sans-serif);
 }
 
-/* 加载指示器动画（可选，使用CSS keyframes） */
 #loading-indicator span::after {
     content: '...';
     animation: dots 1.5s steps(5, end) infinite;
 }
 
-/* 响应式调整 */
 @media (max-width: 768px) {
     body {
-        margin: 20px 10px; /* 移动端减小留白 */
+        margin: 20px 10px;
     }
 
     .facts-header,
     #facts,
     #cy{
-        max-height: 400px; /* 移动端稍减小高度，但仍较大 */
+        max-height: 400px;  
     }
 
     #chat-container {
-        height: 300px; /* 移动端稍减小固定高度 */
-        max-height: 400px; /* 移动端最大高度 */
+        height: 300px; 
+        max-height: 400px; 
     }
 
     .facts-header.create-memory,
@@ -789,8 +752,8 @@ button:hover {
     }
 
     .main-title {
-        font-size: 30px; /* 移动端稍小 */
+        font-size: 30px; 
         padding: 10px 15px;
-        max-width: 90%; /* 自适应宽度 */
+        max-width: 90%; 
     }
 }
