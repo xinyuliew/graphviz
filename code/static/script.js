@@ -145,18 +145,36 @@ function renderPagination() {
     }
 }
 
-function fillSearchExample() {
-    document.getElementById('search-input').value = 'Alice';
-    updateSearchHint();
+function fillSearchExample(exampleType = "entity", exampleValue = "Jezza75") {
+    const searchInput = document.getElementById("search-input");
+    const searchHint = document.getElementById("search-hint");
+    const searchTypeSelect = document.getElementById("search-type"); // Add this select dropdown if not there yet
+    searchInput.value = exampleValue;
+
+    if (searchTypeSelect) {
+        searchTypeSelect.value = exampleType; // e.g., 'entity', 'predicate', or 'object'
+    }
+
+    searchHint.textContent = `Searching for ${exampleType.toUpperCase()} matching "${exampleValue}"`;
+}
+
+function clearSearch() {
+  document.getElementById("search-input").value = "";
+  document.getElementById("search-type").selectedIndex = 0;
+  updateSearchHint();
+  fetchFactsWithLimit(); // refresh to show all facts again
 }
 
 function updateSearchHint() {
-    const searchInput = document.getElementById('search-input').value.trim();
-    const hint = document.getElementById('search-hint');
+    const searchInput = document.getElementById("search-input").value.trim();
+    const searchHint = document.getElementById("search-hint");
+    const searchTypeSelect = document.getElementById("search-type");
+
     if (!searchInput) {
-        hint.textContent = 'Enter an entity (e.g., Alice) or predicate (e.g., loves) to search';
+        searchHint.textContent = "Enter an entity, predicate, or object to search.";
     } else {
-        hint.textContent = 'Click "Search Entity" or "Search Predicate" to find related triples!';
+        const typeText = searchTypeSelect ? searchTypeSelect.value : "entity";
+        searchHint.textContent = `Ready to search by ${typeText} for "${searchInput}".`;
     }
 }
 
@@ -399,10 +417,9 @@ function addFact() {
 }
 
 function fillExample() {
-    document.getElementById('subject').value = 'Alice';
-    document.getElementById('predicate').value = 'loves';
-    document.getElementById('object').value = 'Bob';
-    updateFormHint();
+  document.getElementById("subject").value = "User123";
+  document.getElementById("predicate").value = "HAS_SENTIMENT";
+  document.getElementById("object").value = "Positive";
 }
 
 function updateFormHint() {
@@ -411,7 +428,7 @@ function updateFormHint() {
     const object = document.getElementById('object').value.trim();
     const hint = document.getElementById('form-hint');
     if (!subject && !predicate && !object) {
-        hint.textContent = 'Please enter subject, predicate, and object, e.g., Alice loves Bob';
+        hint.textContent = 'Please enter subject, predicate, and object';
     } else if (!subject) {
         hint.textContent = 'Please enter a subject, e.g., Alice';
     } else if (!predicate) {
@@ -421,6 +438,20 @@ function updateFormHint() {
     } else {
         hint.textContent = 'Click “Create” to save the memory!';
     }
+}
+
+function runSearch() {
+  const type = document.getElementById('search-type').value;
+  const term = document.getElementById('search-input').value.trim();
+
+  if (!term) {
+    alert("Please enter a search term.");
+    return;
+  }
+
+  if (type === 'entity') queryEntity();
+  else if (type === 'predicate') queryPredicate();
+  else if (type === 'object') queryObject();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

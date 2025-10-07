@@ -178,7 +178,6 @@ def chat():
         data = request.get_json()
         message = data.get('message')
         if not message:
-            debug_print("No message provided in request")
             return jsonify({"error": "Message cannot be empty", "refresh": False}), 400
 
         # -----------------------------
@@ -196,8 +195,14 @@ def chat():
         memory_text = "No related facts found"
 
         # -----------------------------
+        # fallback: if no intent detected, treat as query
+        if not any(intent_result.values()):
+            intent_result['query'] = {"keywords": message.split()}
+
+        # -----------------------------
         # handle intent operations of add, update, delete, query
         if intent_result.get("add"):
+            # existing add logic
             add_data = intent_result["add"]
             try:
                 success = kg.add_fact(
@@ -217,6 +222,7 @@ def chat():
                 operation_message = ""
 
         elif intent_result.get("update"):
+            # existing update logic
             update_data = intent_result["update"]
             try:
                 if update_data["old_predicate"] == update_data["new_predicate"]:
@@ -234,7 +240,6 @@ def chat():
                         operation_message = f"Fact updated: {update_data['subject']} {update_data['old_predicate']} {update_data['object']} to {update_data['subject']} {update_data['new_predicate']} {update_data['object']}."
                         refresh = True
                     else:
-                        # 尝试添加为新事实
                         add_success = kg.add_fact(
                             subject=update_data["subject"],
                             predicate=update_data["new_predicate"],
@@ -252,6 +257,7 @@ def chat():
                 operation_message = ""
 
         elif intent_result.get("delete"):
+            # existing delete logic
             delete_data = intent_result["delete"]
             try:
                 success = kg.delete_fact(
@@ -269,8 +275,7 @@ def chat():
                 operation_message = ""
 
         elif intent_result.get("query"):
-            query_data = intent_result["query"]
-            # acquire related facts
+            # fetch all facts
             facts = kg.get_all_facts()
             memory_text = "\n".join([
                 f"{i+1}. {fact['subject']} {fact['predicate']} {fact['object']} (Created At: {fact['created_at']})"
@@ -278,57 +283,32 @@ def chat():
             ]) if facts else "No related facts found"
 
         # -----------------------------
-        # recent messages for prompt
+        # prepare recent messages for prompt
         recent_messages_for_prompt = "No recent messages"
-        if intent_result.get("query") and query_data and query_data.get("keywords"):
-            similar_messages = []
-            max_messages = 5
-            similarity_threshold = 0.75
+        if facts:
             recent_count = min(3, len(short_term_memory))
-            for entry in list(reversed(short_term_memory))[:recent_count]:
-                max_similarity = 0
-                for keyword in query_data["keywords"]:
-                    if keyword.lower() in entry["message"].lower().split() or \
-                       difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio() >= similarity_threshold:
-                        max_similarity = max(max_similarity, difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio())
-                similar_messages.append((entry, max_similarity))
-
-            remaining_slots = max_messages - len(similar_messages)
-            if remaining_slots > 0:
-                for entry in list(reversed(short_term_memory))[recent_count:]:
-                    max_similarity = 0
-                    for keyword in query_data["keywords"]:
-                        if keyword.lower() in entry["message"].lower().split() or \
-                           difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio() >= similarity_threshold:
-                            max_similarity = max(max_similarity, difflib.SequenceMatcher(None, entry["message"].lower(), keyword.lower()).ratio())
-                            similar_messages.append((entry, max_similarity))
-
-            similar_messages.sort(key=lambda x: x[1], reverse=True)
-            similar_messages = similar_messages[:max_messages]
+            similar_messages = list(reversed(short_term_memory))[:recent_count]
             recent_messages_for_prompt = "\n".join([
                 f"{i+1}. {entry['message']} (Timestamp: {entry['timestamp']})"
-                for i, (entry, _) in enumerate(similar_messages)
+                for i, entry in enumerate(similar_messages)
             ]) if similar_messages else "No relevant recent messages"
 
-        debug_print(f"Retrieved facts: {memory_text}")
-
         full_prompt = f"""
-                            Known facts:
-                            {memory_text}
+                        Known facts:
+                        {memory_text}
 
-                            Recent messages:
-                            {recent_messages_for_prompt}
+                        Recent messages:
+                        {recent_messages_for_prompt}
 
-                            User question:
-                            {message}
+                        User question:
+                        {message}
 
-                            Response(Please answer in the language used in the User question):
+                        Response(Please answer in English.):
                         """
-
         debug_print(f"Full prompt sent to LLM: {full_prompt}")
 
         # -----------------------------
-        # record GPT response generation time
+        # generate GPT response
         gpt_start = time.perf_counter()
         try:
             response = client.chat.completions.create(
@@ -343,14 +323,9 @@ def chat():
             response = response.choices[0].message.content.strip()
         except Exception as e:
             debug_print(f"OpenAI error: {str(e)}")
-            return jsonify({"error": f"OpenAI failed to generate response: {str(e)}", "refresh": False}), 500
+            return jsonify({"error": f"OpenAI failed: {str(e)}", "refresh": False}), 500
         gpt_end = time.perf_counter()
         debug_print(f"GPT response generation time: {gpt_end - gpt_start:.6f} seconds")
-        # -----------------------------
-
-        if not response or response.strip() == '':
-            debug_print("OpenAI returned empty or invalid response")
-            return jsonify({"error": "OpenAI failed to generate valid response", "refresh": False}), 500
 
         response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL | re.IGNORECASE)
         response = re.sub(r'\n\s*\n', '\n', response).strip()
@@ -358,16 +333,12 @@ def chat():
         if operation_message:
             response = f"{operation_message}\n{response}"
 
+        # -----------------------------
         # add current message to short-term memory
-        try:
-            short_term_memory.append({
-                "message": message,
-                "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
-            debug_print("Current message added to short-term memory")
-        except AttributeError as e:
-            debug_print(f"Datetime error: {str(e)}")
-            return jsonify({"error": f"Failed to record message due to datetime issue: {str(e)}", "refresh": False}), 500
+        short_term_memory.append({
+            "message": message,
+            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
 
         debug_print(f"Final processed response: {response}")
         return jsonify({

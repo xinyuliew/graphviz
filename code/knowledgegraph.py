@@ -29,9 +29,7 @@ class KnowledgeGraph:
     # CSV Import (only once)
     # ---------------------------
     def import_csv_once(self, csv_path):
-        if not self.driver:
-            print("Neo4j not connected")
-            return
+        
         flag_file = "csv_imported.flag"
         if os.path.exists(flag_file):
             print("CSV data already imported, skipping")
@@ -184,14 +182,13 @@ class KnowledgeGraph:
 
         # add to NetworkX graph if triple does not exist
         if src == 'Manual':
-            original_message = None
             self.graph.add_edge(
                 subject, obj,
                 predicate=predicate,
                 id=fact_id,
                 created_at=created_at,
                 src=src,
-                original_message=original_message,
+                original_message=original_message,  # <-- always
                 version=1
             )
 
