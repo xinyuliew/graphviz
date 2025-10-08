@@ -68,14 +68,10 @@ button:hover {
 }
 
 #create-button {
-    background: linear-gradient(to bottom, #2196F3, #1976D2);
-    color: white;
-    padding: 8px 16px;
     animation: pulse 1.5s infinite;
 }
 
 #create-button:hover {
-    background: linear-gradient(to bottom, #42A5F5, #1565C0);
     animation: none;
 }
 
@@ -135,7 +131,7 @@ button:hover {
 }
 
 .fact-buttons button.details {
-    background: #2196F3;
+    background: #1976D2;
     color: white;
 }
 
@@ -168,21 +164,18 @@ button:hover {
 
 #cy {
     width: 100%;
-    height: 500px;
+    height: 550px;
     border: 1px solid #BBDEFB;
     background-color: #FFFFFF;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
 }
 
 #facts {
     padding: 0;
-    min-height: 100px;
-    max-height: 350px;
+    max-height: 460px;
     overflow-y: auto;
     border-radius: 8px;
-    margin-bottom: 30px; 
 }
 
 #facts::-webkit-scrollbar {
@@ -290,7 +283,6 @@ button:hover {
 }
 
 #pagination button:hover:not(:disabled) {
-    background: linear-gradient(to bottom, #42A5F5, #1565C0);
     transform: scale(1.05);
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
@@ -303,7 +295,6 @@ button:hover {
 
 #search-input {
     padding: 6px;
-    width: 1080px;
     border: 1px solid #BBDEFB;
     border-radius: 4px;
     background-color: #F5FAFF;
@@ -379,12 +370,12 @@ button:hover {
 }
 
 .modal-content button.update {
-    background: linear-gradient(to bottom, #2196F3, #1976D2);
+    background: #4CAF50;
     color: white;
 }
 
 .modal-content button.close-button {
-    background: linear-gradient(to bottom, #ff6b6b, #d43f3f);
+    background: #d32f2f;
     color: white;
 }
 
@@ -494,7 +485,11 @@ button:hover {
     background: #212631;
 }
 
-
+.main-container {
+  display: flex;
+  gap: 0px; /* space between sections */
+  align-items: flex-start; /* align to top */
+}
 
 .facts-header {
     padding: 16px;
@@ -511,9 +506,9 @@ button:hover {
 }
 
 .facts-header.create-memory {
-     background: #FFFFFF;
+    background: #FFFFFF;
     box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
-    border-radius: 8px;
+    border-radius: 18px;
     padding: 20px;
     margin: 2rem 3rem;
 }
@@ -521,24 +516,27 @@ button:hover {
 .facts-header.query-section {
     background: #FFFFFF;
     box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
-    border-radius: 8px;
+    border-radius: 18px;
     padding: 20px;
-    margin: 1rem 3rem;
+    width: 50%;
+    margin: 0rem 1rem 1rem 3rem;
 }
 
 .graph-section {
     background: #FFFFFF;
     box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
-    border-radius: 8px;
+    border-radius: 18px;
     padding: 20px;
-    margin: 1rem 3rem;
+    flex: 1;
+    min-width: 300px;
+    margin: 0rem 3rem 1rem 1rem;
 
 }
 
 .chat-section {
     background: #FFFFFF;
     box-shadow: 0 12px 30px rgba(46, 71, 101, 0.1);
-    border-radius: 8px;
+    border-radius: 18px;
     padding: 20px;
     margin: 1rem 3rem;
 }
@@ -613,10 +611,9 @@ button:hover {
     flex-direction: column;
     gap: 10px;
     margin-bottom: 15px;
-    margin-top: 40px;
     border: 1px solid #BBDEFB;
     padding: 15px;
-    height: 800px; 
+    height: 200px; 
     max-height: 600px; 
     overflow-y: auto; 
     overflow-x: hidden; 
@@ -651,7 +648,6 @@ button:hover {
 }
 
 .user-message::before {
-    content: '🧑';
     position: absolute;
     right: -30px;
     top: 5px;
@@ -659,7 +655,6 @@ button:hover {
 }
 
 .model-message::before {
-    content: '🤖';
     position: absolute;
     left: -30px;
     top: 5px;

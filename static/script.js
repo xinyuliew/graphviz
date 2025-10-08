@@ -171,7 +171,7 @@ function updateSearchHint() {
     const searchTypeSelect = document.getElementById("search-type");
 
     if (!searchInput) {
-        searchHint.textContent = "Enter an entity, predicate, or object to search.";
+        searchHint.textContent = "Enter a subject, a relationship, or a value to search";
     } else {
         const typeText = searchTypeSelect ? searchTypeSelect.value : "entity";
         searchHint.textContent = `Ready to search by ${typeText} for "${searchInput}".`;
@@ -182,7 +182,7 @@ function updateChatHint() {
     const chatInput = document.getElementById('chat-input').value.trim();
     const hint = document.getElementById('chat-hint');
     if (!chatInput) {
-        hint.textContent = 'Ask a question about your memories, e.g., "What does Alice like?"';
+        hint.textContent = 'e.g., "Why are the overall sentiments negative?"';
     } else {
         hint.textContent = 'Click "Send" to get an answer!';
     }
