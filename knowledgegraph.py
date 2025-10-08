@@ -1,4 +1,3 @@
-from cgitb import text
 import networkx as nx
 from neo4j import GraphDatabase
 from datetime import datetime
