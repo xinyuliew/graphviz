@@ -25,7 +25,7 @@ short_term_memory = deque(maxlen=20)
 ensure_docker_running()
 start_neo4j_container()
 kg = KnowledgeGraph()
-import_data = kg.import_csv_once('/Users/trixieliew/Desktop/social_media_kg_project/data/reddit_vaccine_discourse.csv')  # Import data from CSV
+# import_data = kg.import_csv_once('/Users/trixieliew/Desktop/social_media_kg_project/data/reddit_vaccine_discourse.csv')  # Import data from CSV
 
 llm = LocalLLM()  # Initialize LLM
 
