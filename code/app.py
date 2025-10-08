@@ -278,7 +278,7 @@ def chat():
             # fetch all facts
             facts = kg.get_all_facts()
             memory_text = "\n".join([
-                f"{i+1}. {fact['subject']} {fact['predicate']} {fact['object']} (Created At: {fact['created_at']})"
+                f"{i+1}. {fact['subject']} {fact['predicate']} {fact['object']} (Created At: {fact['created_at']})\nOriginal Message: {fact['original_message']}"
                 for i, fact in enumerate(facts)
             ]) if facts else "No related facts found"
 
