@@ -7,13 +7,14 @@
     <title>DiscourseDash</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:ital,wght@0,400;1,400&family=Roboto+Slab:wght@600&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <h1 class="main-title">DiscourseDash</h1>
         <div class="facts-header create-memory">
-            <h3>Add a New Knowledge Entry</h3>
+            <h3>Add Memory</h3>
                 <p class="create-guide">
                     Define a relationship from social media (e.g., user stance or sentiment about a post)
                 </p>
@@ -28,7 +29,7 @@
                     <input type="text" id="subject" placeholder="e.g., User123" title="Enter the entity (e.g., user, post)">
 
                     <label>Relationship</label>
-                    <select title="Select the type of relationship">
+                    <select id="predicate" title="Select the type of relationship">
                         <option value="">Select</option>
                         <option value="POSTED">POSTED</option>
                         <option value="HAS_SENTIMENT">HAS_SENTIMENT</option>
@@ -38,40 +39,39 @@
 
                     <label>Value</label>
                     <input type="text" id="object" placeholder="e.g., Positive, Against" title="Enter value of the relationship">
-                    <button class="create-button" onclick="addFact()">Create Insight</button>
+                    <button class="create-button" onclick="addFact()">Create</button>
                 </div>
             <p id="form-hint" class="form-hint"></p>
         </div>
         
+      <div class="main-container">
         <div class="facts-header query-section">
-            <h3>Browse Knowledge</h3>
-            <p class="query-guide">Search or manage constructed insights</p>
+            <h3>Memories</h3>
+            <p class="query-guide">A browse of your memories</p>
             <div class="example-card" onclick="fillSearchExample()">
                 <span class="example-triple">Search for User:Jezza75</span>
                 <span class="example-hint">Use this example for demo</span>
             </div>
-            <!-- Unified Search -->
             <div class="form-group">
                 <select id="search-type" title="Select search type">
                     <option value="entity" selected>Entity</option>
                     <option value="predicate">Relationship</option>
                     <option value="object">Value</option>
                 </select>
-                <input type="text" id="search-input" placeholder="Enter a search term...">
+                <input type="text" id="search-input" placeholder="Search events">
                 <button onclick="runSearch()">Search</button>
                 <button onclick="clearSearch()">Clear search</button>
             </div>
-            <p id="search-hint"></p>
+            <p id="search-hint" class="form-hint"></p>
 
             <div id="facts">
                 <ul id="facts-list"></ul>
                 <div id="pagination"></div>
             </div>
         </div>
-        <div class="graph-section">
-            
-            <h3>Knowledge Graph</h3>
-            
+
+        <div class="facts-header graph-section">
+            <h3>Graph Memory</h3>
             <p class="graph-guide">Visualise relationships between entities</p>
             <div class="form-group">
                 <label for="node-limit">Number of nodes to display:</label>
@@ -80,16 +80,17 @@
             </div>
             <div id="cy"></div>
         </div>
+        </div>
         
-        <div class="chat-section">
-            <h2 class="chat-title">LLM Chat-box</h2>
+        <div class="facts-header chat-section">
+            <h2 class="chat-title">What can I help you with?</h2>
             <p class="chat-guide">Ask questions about your knowledge base</p>
             <div id="chat-container"></div>
             <div id="loading-indicator" style="display: none; text-align: center; padding: 10px; color: #888;">
                 <span>I'm thinking...</span> 
             </div>
             <div class="form-group chat-input-group">
-                <input type="text" id="chat-input" placeholder="e.g., Why are the overall users not being positive?" title="Ask a question about your knowledge base">
+                <input type="text" id="chat-input" placeholder="Type a Message" title="Ask a question about your knowledge base">
                 <button id="send-chat" onclick="sendChat()">Send</button>
             </div>
             <p id="chat-hint" class="form-hint"></p>
