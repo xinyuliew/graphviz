@@ -13,7 +13,6 @@ import re
 import os
 from collections import deque
 
-OPENAI_API_KEY = 0
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = Flask(__name__)
@@ -353,6 +352,4 @@ def chat():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
-        # python -m http.server 8000
-    # http://localhost:8000/index.html
+    app.run(debug=os.getenv("DEBUG", "false").lower() == "true")

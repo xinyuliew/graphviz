@@ -57,7 +57,7 @@ function renderFactsPage(page) {
 
 // Fetch all facts from backend with optional limit and render
 function fetchFacts() {
-    fetch('http://localhost:5000/api/facts')
+    fetch('/api/facts')
         .then(response => {
             if (!response.ok) {
                 return response.text().then(text => {
@@ -259,7 +259,7 @@ function showDetailsModal(subject, predicate, object, createdAt, source, origina
     document.getElementById('details-original-message').textContent = originalMessage || 'N/A';
     document.getElementById('details-version').textContent = version || '1';
     
-    fetch(`http://localhost:5000/api/update_timeline?subject=${encodeURIComponent(subject)}&object=${encodeURIComponent(object)}&id=${encodeURIComponent(id)}`)
+    fetch(`/api/update_timeline?subject=${encodeURIComponent(subject)}&object=${encodeURIComponent(object)}&id=${encodeURIComponent(id)}`)
         .then(response => {
             if (!response.ok) {
                 return response.text().then(text => {
@@ -296,7 +296,7 @@ function closeDetailsModal() {
 
 function deleteTriple(subject, predicate, object, id) {
     if (!confirm(`Are you sure you want to delete the triple ${subject} ${predicate} ${object} (ID: ${id})?`)) return;
-    fetch('http://localhost:5000/api/delete_fact', {
+    fetch('/api/delete_fact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subject, predicate, object, id })
@@ -356,7 +356,7 @@ function submitUpdate() {
         return;
     }
     console.log('Sending update request:', { subject, old_predicate, old_object, new_predicate, id });
-    fetch('http://localhost:5000/api/update_fact', {
+    fetch('/api/update_fact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subject, old_predicate, old_object, new_predicate, id })
@@ -391,7 +391,7 @@ function addFact() {
         alert('Please fill in all fields (subject, predicate, object)');
         return;
     }
-    fetch('http://localhost:5000/api/add_fact', {
+    fetch('/api/add_fact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subject, predicate, object })
@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function deleteAllFacts() {
     if (!confirm('Are you sure you want to delete all facts? This action is irreversible!')) return;
-    fetch('http://localhost:5000/api/delete_all_facts', {
+    fetch('/api/delete_all_facts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -494,7 +494,7 @@ function queryEntity() {
 
     if (!entity) return alert('Please enter an entity name');
 
-    fetch(`http://localhost:5000/api/query_entity?entity=${encodeURIComponent(entity)}&limit=${limit}`)
+    fetch(`/api/query_entity?entity=${encodeURIComponent(entity)}&limit=${limit}`)
         .then(res => res.ok ? res.json() : res.text().then(text => Promise.reject(`HTTP ${res.status}: ${text}`)))
         .then(data => handleQueryResults(data))
         .catch(err => {
@@ -510,7 +510,7 @@ function queryPredicate() {
 
     if (!predicate) return alert('Please enter a predicate');
 
-    fetch(`http://localhost:5000/api/query_predicate?predicate=${encodeURIComponent(predicate)}&limit=${limit}`)
+    fetch(`/api/query_predicate?predicate=${encodeURIComponent(predicate)}&limit=${limit}`)
         .then(res => res.ok ? res.json() : res.text().then(text => Promise.reject(`HTTP ${res.status}: ${text}`)))
         .then(data => handleQueryResults(data))
         .catch(err => {
@@ -526,7 +526,7 @@ function queryObject() {
 
     if (!obj) return alert('Please enter an object name');
 
-    fetch(`http://localhost:5000/api/query_object?object=${encodeURIComponent(obj)}&limit=${limit}`)
+    fetch(`/api/query_object?object=${encodeURIComponent(obj)}&limit=${limit}`)
         .then(res => res.ok ? res.json() : res.text().then(text => Promise.reject(`HTTP ${res.status}: ${text}`)))
         .then(data => handleQueryResults(data))
         .catch(err => {
@@ -580,7 +580,7 @@ function sendChat() {
     // Show loading indicator
     document.getElementById('loading-indicator').style.display = 'block';
     
-    fetch('http://localhost:5000/api/chat', {
+    fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userInput })

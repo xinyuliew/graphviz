@@ -3,7 +3,11 @@ import spacy
 import re
 from typing import Dict, Optional
 import json
+import os
+from openai import OpenAI
 from utils.utils import debug_print
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class LocalLLM:
     def __init__(self, model_name="deepseek-r1:7b"):

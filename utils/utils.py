@@ -1,6 +1,7 @@
 import re
+import os
 
-DEBUG_ENABLED = True  
+DEBUG_ENABLED = os.getenv("DEBUG", "false").lower() == "true"
 def debug_print(message):
     if DEBUG_ENABLED:
         print(f"[DEBUG] {message}")
